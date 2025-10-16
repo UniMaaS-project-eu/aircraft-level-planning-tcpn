@@ -1,0 +1,183 @@
+{
+  "colorSets": [
+    "colset INT = int timed;",
+    "colset CS0 = product(INT, INT);",
+    "colset CS1 = product(INT, INT);",
+    "colset spec = product(CS0, CS1);",
+    "colset CS2 = product(INT, INT);",
+    "colset airplane = product(INT, CS2) timed;",
+    "colset flight = product(INT, INT) timed;"
+  ],
+  "places": [
+    {
+      "name": "active_fleet",
+      "colorSet": "airplane"
+    },
+    {
+      "name": "maintenance",
+      "colorSet": "airplane"
+    },
+    {
+      "name": "specs",
+      "colorSet": "spec"
+    },
+    {
+      "name": "flights",
+      "colorSet": "flight"
+    }
+  ],
+  "transitions": [
+    {
+      "name": "bring_up",
+      "inArcs": [
+        {
+          "place": "maintenance",
+          "expression": "[x]"
+        },
+        {
+          "place": "specs",
+          "expression": "[y]"
+        }
+      ],
+      "outArcs": [
+        {
+          "place": "active_fleet",
+          "expression": "[(y[0],y[1],y[2])]"
+        },
+        {
+          "place": "specs",
+          "expression": "[y]"
+        }
+      ],
+      "variables": [
+        "x",
+        "y"
+      ],
+      "transitionDelay": 3
+    },
+    {
+      "name": "fly",
+      "inArcs": [
+        {
+          "place": "active_fleet",
+          "expression": "[x]"
+        },
+        {
+          "place": "flights",
+          "expression": "[y]"
+        }
+      ],
+      "outArcs": [
+        {
+          "place": "active_fleet",
+          "expression": "[(x[0]-y[0],x[1]-y[1],x[2])]"
+        }
+      ],
+      "guard": "x[0] > 0 and x[1] > 0",
+      "variables": [
+        "x",
+        "y"
+      ],
+      "transitionDelay": 1
+    },
+    {
+      "name": "bring_down",
+      "inArcs": [
+        {
+          "place": "active_fleet",
+          "expression": "[x]"
+        }
+      ],
+      "outArcs": [
+        {
+          "place": "maintenance",
+          "expression": "[x]"
+        }
+      ],
+      "guard": "x[0] <= 0 or x[1] <= 0",
+      "variables": [
+        "x"
+      ]
+    }
+  ],
+  "initialMarking": {
+    "active_fleet": {
+      "tokens": [
+        [
+          5,
+          15,
+          20
+        ]
+      ],
+      "timestamps": [
+        0
+      ]
+    },
+    "flights": {
+      "tokens": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "timestamps": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    "specs": {
+      "tokens": [
+        [
+          5,
+          15,
+          20,
+          3
+        ]
+      ]
+    }
+  }
+}
