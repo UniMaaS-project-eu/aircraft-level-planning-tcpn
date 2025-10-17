@@ -58,8 +58,19 @@ cpn.add_arc(bu_out2)
 # Create a marking
 marking = Marking()
 schedule =[
-    (1,2)
-    ]*10
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    (1,2),
+    ]
 marking.set_tokens("active_fleet", [(5, 15, 20)])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
 marking.set_tokens("specs", [(5,15,20,3)])  # both at time 0

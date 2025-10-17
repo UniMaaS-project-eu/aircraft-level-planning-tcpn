@@ -2,11 +2,11 @@
   "colorSets": [
     "colset INT = int timed;",
     "colset CS0 = product(INT, INT);",
+    "colset flight = product(INT, INT) timed;",
     "colset CS1 = product(INT, INT);",
-    "colset spec = product(CS0, CS1);",
+    "colset airplane = product(INT, CS0) timed;",
     "colset CS2 = product(INT, INT);",
-    "colset airplane = product(INT, CS2) timed;",
-    "colset flight = product(INT, INT) timed;"
+    "colset spec = product(CS2, CS1);"
   ],
   "places": [
     {
@@ -154,6 +154,14 @@
         [
           1,
           2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
         ]
       ],
       "timestamps": [
@@ -166,7 +174,9 @@
         6,
         7,
         8,
-        9
+        9,
+        10,
+        11
       ]
     },
     "specs": {
