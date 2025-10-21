@@ -7,9 +7,15 @@ cs_defs = """
 colset INT = int timed;
 colset TIME = time;
 colset STRING = string;
-colset airplane = product(INT, product(INT, INT)) timed;
+
+colset task = product(INT, product(INT, INT));
+colset airplane = list task timed;
+
 colset flight = product( STRING, product(INT, INT)) timed;
-colset spec = product( INT, product(INT, INT));
+
+colset spec_element = product( INT, product(INT, INT));
+colset spec = list spec_element;
+
 colset log = STRING;
 colset wg = STRING timed;
 
@@ -30,37 +36,44 @@ workgroup = Place("workgroup", wg)
 logs = Place("logs", log)
 
 
-fly = Transition("fly", variables= ["a","f","s"], guard="ne(a,s)",transition_delay=1)
-maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s,w)",transition_delay=0)
+fly = Transition("fly", variables= ["a","f","s"], guard="not e(a,s)",transition_delay=1)
+maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s)",transition_delay=0)
 
 
 # Evaluation context with a user-defined function
 user_code = """
 
-# def th1(a,s):
-#     return a>0.8*s
-# def th2(a,s):
-#     return a>0.6*s
+def th1(a,s):
+    return any(i>0.8*j for i,j in zip(a,s))
+def th2(a,s):
 
-# def TH1(a,s):
-#     return [th1(i,j) for i,j in zip(a,s)]
+    return any(i>0.6*j for i,j in zip(a,s))
+
+def TH1(a,s):
+    return [th1(i,j) for i,j in zip(a,s)]
 
 def TH2(a,s):
-    return "all tasks"
-
-# def TH2(a,s):
-#     return [th2(i,j) for i,j in zip(a,s)]
-def e(a,s,w):
+    return [th2(i,j) for i,j in zip(a,s)]
+def e(a,s):
     # print(f'a : {a}, s : {s}')
-    return any([i==j for i,j in zip(a,s)])
-def ne(a,s):
-    # print(f'a : {a}, s : {s}')
-    return not any([i==j for i,j in zip(a,s)])
+    # return any([i==j for i,j in zip(a,s)])
+    return any(TH1(a,s))
+# def ne(a,s):
+#     # print(f'a : {a}, s : {s}')
+#     return not any([i==j for i,j in zip(a,s)])
+def add(x,y):
+    # print(x,y)
+    return tuple([i+j for i,j in zip(x,y)])
 def fl(a,f):
-    return tuple([(i+j) for i,j in zip(a[:-1],f[1:])]+[a[-1] +1])
+    # return tuple([(i+j) for i,j in zip(a[:-1],f[1:])]+[a[-1] +1])
+    # fval = f[1:]
+    # aval = f[:-1]
+    return [add(f[1:],i[:-1])+ (i[-1]+1,) for i in a]
+
 def reset(a,s):
     #     return ([i*j for i,j in zip(a,TH2(a,s))])
-    return tuple([0 for _ in a])
+    # return tuple([0 for _ in a])
+    return [(0,0,0) if th else i for i,th in zip(a,TH2(a,s))]
 
     """
 # context = EvaluationContext()
@@ -120,9 +133,9 @@ schedule =[
     ('#12',1,2)
     ]
 
-marking.set_tokens("active_fleet", [(0, 0, 0)])  # both at time 0
+marking.set_tokens("active_fleet", [[(0, 0, 0),(0, 0, 0),(0, 0, 0)]])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(1,len(schedule)-1)))  # both at time 0
-marking.set_tokens("specs", [(5,15,20)])  # both at time 0
+marking.set_tokens("specs", [[(5,15,20),(6,13,20),(20,30,50)]])  # both at time 0
 marking.set_tokens("workgroup", ['a','a'], timestamps=[1,1])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
