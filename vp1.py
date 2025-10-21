@@ -128,7 +128,7 @@ context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
 
 # # Assuming you have a CPN, marking, and context objects as before
-exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "vp1_usercode.py")
+exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
 print ("exporeded JSON")
 
 
