@@ -142,22 +142,34 @@ def prettymarking(m):
     return res
 viz = CPNGraphViz().apply(cpn, marking, format="png")
     # viz.view()
+
+
 path = viz.save("vizout")
 print("Saved to:", path)
 print("Initial marking:")
 print(prettymarking(marking))  
-def sequeun(cpn,marking,context):
-    transitions = cpn.transitions
-    for t in transitions:
-        if cpn.is_enabled(t,marking,context):
-            cpn.fire_transition(t,marking,context)
-    cpn.advance_global_clock(marking)
-    print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
-    viz = CPNGraphViz().apply(cpn, marking, format="png")
-    # viz.view()
-    path = viz.save("vizout")
-    print("Saved to:", path)
-    
-while (input("next:?") != 'x'):
-    sequeun(cpn,marking,context)
+from sys import argv
 
+if argv[1] == "manual":
+    def sequeun(cpn,marking,context):
+        transitions = cpn.transitions
+        for t in transitions:
+            if cpn.is_enabled(t,marking,context):
+                cpn.fire_transition(t,marking,context)
+        cpn.advance_global_clock(marking)
+        print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
+        viz = CPNGraphViz().apply(cpn, marking, format="png")
+        # viz.view()
+        path = viz.save("vizout")
+        print("Saved to:", path)
+
+    while (input("next:?") != 'x'):
+        sequeun(cpn,marking,context)
+if argv[1] == "statespace":
+    from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
+    analyzer = StateSpaceAnalyzer(cpn, marking, context)   
+    report = analyzer.summarize()
+
+    print("=== State Space Report ===")
+    for key, val in report.items():
+        print(f"{key}: {val}")
