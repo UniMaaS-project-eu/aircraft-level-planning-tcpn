@@ -14,7 +14,7 @@ colset airplane = list task timed;
 colset flight = product( STRING, product(INT, INT)) timed;
 
 colset spec_element = product( INT, product(INT, INT));
-colset spec = list spec_element;
+colset spec = product(list spec_element, list INT);
 
 colset log = STRING;
 colset wg = STRING timed;
@@ -36,18 +36,24 @@ workgroup = Place("workgroup", wg)
 logs = Place("logs", log)
 
 
-fly = Transition("fly", variables= ["a","f","s"], guard="not e(a,s)",transition_delay=1)
-maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s)",transition_delay=0)
+fly = Transition("fly", variables= ["a","f","s"], guard="not e(a,s[0])",transition_delay=1)
+maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0])",transition_delay=0)
+expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
 
 
 # Evaluation context with a user-defined function
 user_code = """
 
 def th1(a,s):
-    return any(i>0.8*j for i,j in zip(a,s))
+    return any(i>0.8*(j) for i,j in zip(a,s))
+
 
 def th2(a,s):
-    return any(i>0.6*j for i,j in zip(a,s))
+    return any(i>0.6*(j) for i,j in zip(a,s))
+
+def th_error(a,s):
+    return any([i>=j for i,j in zip(a,s)])
+
 
 def TH1(a,s):
     return [th1(i,j) for i,j in zip(a,s)]
@@ -67,21 +73,30 @@ def fl(a,f):
 def reset(a,s):
     return [(0,0,0) if th else i for i,th in zip(a,TH2(a,s))]
 
+def expire(a,s):
+    return any([th_error(i,j) for i,j in zip(a,s)])
+
+def Duration(th,d):
+    return sum([i*j for i,j in zip(th,d)])
     """
 # context = EvaluationContext()
 
 
 am = Arc(active_fleet, maintenance, "[a]")
-ma = Arc(maintenance, active_fleet, "[reset(a,s)]")
+# ma = Arc(maintenance, active_fleet, "[reset(a,s[0])] @+888")
+ma = Arc(maintenance, active_fleet, "[reset(a,s[0])] @+Duration(TH2(a,s[0]),s[1])")
 sm = Arc(specs,maintenance,"[s]")
 ms = Arc(maintenance,specs,"[s]")
 af = Arc(active_fleet,fly,"[a]")
 fa = Arc(fly,active_fleet,"[fl(a,f)]")
 ff = Arc(flights,fly,"[f]")
 wm = Arc(workgroup,maintenance,"[w]")
-ml = Arc(maintenance,logs,"[f'maintenance : {a} {TH2(a,s)}']")
+ml = Arc(maintenance,logs,"[f'tok_state : {a} , tasks_selected: {TH2(a,s[0])}, Duration :  {Duration(TH2(a,s[0]),s[1])}']")
 sf = Arc(specs,fly,"[s]")
 fs = Arc(fly,specs,"[s]")
+ae = Arc(active_fleet,expire,"[a]")
+se = Arc(specs,expire,"[s]")
+
 
 
 cpn = CPN()
@@ -95,6 +110,7 @@ cpn.add_place(logs)
 
 cpn.add_transition(fly)
 cpn.add_transition(maintenance)
+cpn.add_transition(expire)
 
 cpn.add_arc(am)
 cpn.add_arc(ma)
@@ -107,27 +123,31 @@ cpn.add_arc(wm)
 cpn.add_arc(ml)
 cpn.add_arc(sf)
 cpn.add_arc(fs)
+cpn.add_arc(ae)
+cpn.add_arc(se)
+
 
 
 marking = Marking()
 schedule =[
+    ('#0',0,0),
     ('#1',1,2),
     ('#2',1,2),
-    ('#3',1,2),
-    ('#4',1,2),
+    ('#3',3,9),
+    ('#4',2,2),
     ('#5',1,2),
     ('#6',1,2),
-    ('#7',1,2),
-    ('#8',1,2),
-    ('#9',1,2),
+    ('#7',2,8),
+    ('#8',1,4),
+    ('#9',1,4),
     ('#10',1,2),
     ('#11',1,2),
     ('#12',1,2)
     ]
 
 marking.set_tokens("active_fleet", [[(0, 0, 0),(0, 0, 0),(0, 0, 0)]])  # both at time 0
-marking.set_tokens("flights", schedule,timestamps=(range(1,len(schedule)-1)))  # both at time 0
-marking.set_tokens("specs", [[(5,15,20),(6,13,20),(20,30,50)]])  # both at time 0
+marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
+marking.set_tokens("specs", [([(5,15,20),(6,13,20),(20,30,50)],[4,4,9])])  # both at time 0
 marking.set_tokens("workgroup", ['a','a'], timestamps=[1,1])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
@@ -167,9 +187,15 @@ if argv[1] == "manual":
         # viz.view()
         path = viz.save("vizout")
         print("Saved to:", path)
-
-    while (input("next:?") != 'x'):
+    prev_clock = None
+    while (input("?\r") != 'x' and prev_clock != marking.global_clock):
+        prev_clock = marking.global_clock
         sequeun(cpn,marking,context)
+        print("\n")
+        
+    if len(marking.get_multiset("active_fleet").tokens) == 0:
+        print("UNSAFE") 
+    else:print("SAFE") 
 if argv[1] == "statespace":
     from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
     analyzer = StateSpaceAnalyzer(cpn, marking, context)   
