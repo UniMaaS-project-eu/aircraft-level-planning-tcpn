@@ -77,8 +77,6 @@ def reset(a,s,d):
     return [(0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))]
 
 def expire(a,s):
-    print(a)
-    print(s)
     return any([th_error(i,j) for i,j in zip(a,s)])
 
 def Duration(th,d):
