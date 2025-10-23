@@ -45,8 +45,8 @@ user_code = """
 
 def th1(a,s):
     return any(i>0.8*j for i,j in zip(a,s))
-def th2(a,s):
 
+def th2(a,s):
     return any(i>0.6*j for i,j in zip(a,s))
 
 def TH1(a,s):
@@ -54,25 +54,17 @@ def TH1(a,s):
 
 def TH2(a,s):
     return [th2(i,j) for i,j in zip(a,s)]
+
 def e(a,s):
-    # print(f'a : {a}, s : {s}')
-    # return any([i==j for i,j in zip(a,s)])
     return any(TH1(a,s))
-# def ne(a,s):
-#     # print(f'a : {a}, s : {s}')
-#     return not any([i==j for i,j in zip(a,s)])
+
 def add(x,y):
-    # print(x,y)
     return tuple([i+j for i,j in zip(x,y)])
+
 def fl(a,f):
-    # return tuple([(i+j) for i,j in zip(a[:-1],f[1:])]+[a[-1] +1])
-    # fval = f[1:]
-    # aval = f[:-1]
     return [add(f[1:],i[:-1])+ (i[-1]+1,) for i in a]
 
 def reset(a,s):
-    #     return ([i*j for i,j in zip(a,TH2(a,s))])
-    # return tuple([0 for _ in a])
     return [(0,0,0) if th else i for i,th in zip(a,TH2(a,s))]
 
     """
@@ -157,7 +149,7 @@ viz = CPNGraphViz().apply(cpn, marking, format="png")
     # viz.view()
 
 
-path = viz.save("vizout")
+path = viz.save("vp1")
 print("Saved to:", path)
 print("Initial marking:")
 print(prettymarking(marking))  
