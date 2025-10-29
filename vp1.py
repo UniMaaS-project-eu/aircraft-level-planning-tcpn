@@ -43,6 +43,7 @@ unsafe = Place("unsafe", tok )
 fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w <= 0)",transition_delay=1)
 maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w>0",transition_delay=0)
 expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
+cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0 <= 0")
 cleanupfl = Transition("cleanupfl", variables= ["f"])
 
 
@@ -108,6 +109,8 @@ ae = Arc(active_fleet,expire,"[a]")
 se = Arc(specs,expire,"[s]")
 eu = Arc(expire,unsafe,"'☠️'")
 
+wc = Arc(workgroup,cleanup_wg,"[w,w0]")
+cw = Arc(cleanup_wg,workgroup,"[w]")
 
 
 cpn = CPN()
@@ -123,6 +126,7 @@ cpn.add_place(unsafe)
 cpn.add_transition(fly)
 cpn.add_transition(maintenance)
 cpn.add_transition(expire)
+cpn.add_transition(cleanup_wg)
 cpn.add_transition(cleanupfl)
 
 cpn.add_arc(am)
@@ -142,31 +146,19 @@ cpn.add_arc(se)
 cpn.add_arc(eu)
 cpn.add_arc(wf)
 cpn.add_arc(fw)
+cpn.add_arc(wc)
+cpn.add_arc(cw)
 cpn.add_arc(fc)
 
 
 
 marking = Marking()
-schedule =[
-    ('#0',0,0),
-    ('#1',1,2),
-    ('#2',1,2),
-    ('#3',3,9),
-    ('#4',2,2),
-    ('#5',1,2),
-    ('#6',1,2),
-    ('#7',2,8),
-    ('#8',1,4),
-    ('#9',1,2),
-    ('#10',1,2),
-    ('#11',1,2),
-    # ('#12',1,2)
-]
+schedule =[(f"#{i}",1,2) for i in range(60)]
 
 marking.set_tokens("active_fleet", [((0, 0, 0),(0, 0, 0),(0, 0, 0))])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
 marking.set_tokens("specs", [(((5,15,20),(6,13,20),(20,30,50)),(4,4,9))])  # both at time 0
-marking.set_tokens("workgroup", [2], timestamps=[0])  # both at time 0
+marking.set_tokens("workgroup", [1,1.9], timestamps=[0,25])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
 
@@ -197,8 +189,11 @@ if argv[1] == "manual":
     def sequeun(cpn,marking,context):
         transitions = cpn.transitions
         for t in transitions:
+            print (t.name,end=' : ')
             if cpn.is_enabled(t,marking,context):
+                print("OK",end = '')
                 cpn.fire_transition(t,marking,context)
+            print("\n")
         cpn.advance_global_clock(marking)
         print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
         viz = CPNGraphViz().apply(cpn, marking, format="png")
@@ -212,6 +207,32 @@ if argv[1] == "manual":
 
         sequeun(cpn,marking,context)
         
+    if len(marking.get_multiset("unsafe").tokens) != 0:
+        print("UNSAFE") 
+    else:print("SAFE") 
+
+if argv[1] == "sim":
+    def sequeun(cpn,marking,context):
+        transitions = cpn.transitions
+        for t in transitions:
+            if cpn.is_enabled(t,marking,context):
+                cpn.fire_transition(t,marking,context)
+        cpn.advance_global_clock(marking)
+        if argv[-1] == "-v":print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
+        viz = CPNGraphViz().apply(cpn, marking, format="png")
+        # viz.view()
+        path = viz.save("vizout")
+        # print("Saved to:", path)
+    prev_clock = None
+    print("Running....")
+    while (prev_clock != marking.global_clock):
+        prev_clock = marking.global_clock
+        if argv[-1] == "-v":print("\n\n")
+
+        sequeun(cpn,marking,context)
+        
+    print("Final marking:")
+    print(prettymarking(marking)) 
     if len(marking.get_multiset("unsafe").tokens) != 0:
         print("UNSAFE") 
     else:print("SAFE") 
