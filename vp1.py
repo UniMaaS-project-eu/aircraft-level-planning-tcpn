@@ -39,9 +39,11 @@ logs = Place("logs", log)
 unsafe = Place("unsafe", tok )
 
 
+
 fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w <= 0)",transition_delay=1)
 maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w>0",transition_delay=0)
 expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
+cleanupfl = Transition("cleanupfl", variables= ["f"])
 
 
 # Evaluation context with a user-defined function
@@ -101,6 +103,7 @@ fw = Arc(fly,workgroup,"[w]")
 ml = Arc(maintenance,logs,"[f'Plane: {a}, Tasks: {TH2(a,s[0])}, Duration: {Duration(TH2(a,s[0]),s[1])}']")
 sf = Arc(specs,fly,"[s]")
 fs = Arc(fly,specs,"[s]")
+fc = Arc(flights,cleanupfl,"[f]")
 ae = Arc(active_fleet,expire,"[a]")
 se = Arc(specs,expire,"[s]")
 eu = Arc(expire,unsafe,"'☠️'")
@@ -120,6 +123,7 @@ cpn.add_place(unsafe)
 cpn.add_transition(fly)
 cpn.add_transition(maintenance)
 cpn.add_transition(expire)
+cpn.add_transition(cleanupfl)
 
 cpn.add_arc(am)
 cpn.add_arc(ma)
@@ -138,6 +142,7 @@ cpn.add_arc(se)
 cpn.add_arc(eu)
 cpn.add_arc(wf)
 cpn.add_arc(fw)
+cpn.add_arc(fc)
 
 
 
