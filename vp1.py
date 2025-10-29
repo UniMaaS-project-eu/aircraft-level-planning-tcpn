@@ -156,12 +156,12 @@ schedule =[
     ('#10',1,2),
     ('#11',1,2),
     # ('#12',1,2)
-    ]
+]
 
-marking.set_tokens("active_fleet", [[(0, 0, 0),(0, 0, 0),(0, 0, 0)]])  # both at time 0
+marking.set_tokens("active_fleet", [((0, 0, 0),(0, 0, 0),(0, 0, 0))])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
-marking.set_tokens("specs", [([(5,15,20),(6,13,20),(20,30,50)],[4,4,9])])  # both at time 0
-marking.set_tokens("workgroup", [2], timestamps=[1])  # both at time 0
+marking.set_tokens("specs", [(((5,15,20),(6,13,20),(20,30,50)),(4,4,9))])  # both at time 0
+marking.set_tokens("workgroup", [2], timestamps=[0])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
 
