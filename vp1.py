@@ -8,7 +8,7 @@ colset INT = int timed;
 colset TIME = time;
 colset STRING = string;
 
-colset task = product(INT, product(INT, INT));
+colset task = product(product(INT, STRING), product(INT, INT));
 colset airplane = list task timed;
 
 colset flight = product( STRING, product(INT, INT)) timed;
@@ -51,14 +51,14 @@ cleanupfl = Transition("cleanupfl", variables= ["f"])
 user_code = """
 
 def th1(a,s):
-    return any(i>0.8*(j) for i,j in zip(a,s))
+    return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
 
 
 def th2(a,s):
-    return any(i>0.6*(j) for i,j in zip(a,s))
+    return any(i>0.6*(j) for i,j in zip(a[1:],s[1:]))
 
 def th_error(a,s):
-    return any([i>=j for i,j in zip(a,s)])
+    return any([i>=j for i,j in zip(a[1:],s[1:])])
 
 
 def TH1(a,s):
@@ -74,10 +74,10 @@ def add(x,y):
     return tuple([i+j for i,j in zip(x,y)])
 
 def fl(a,f):
-    return tuple([add(f[1:],i[:-1])+ (i[-1]+1,) for i in a])
+    return tuple([(i[0],) + add(f[1:],i[1:-1])+ (i[-1]+1,) for i in a])
 
 def reset(a,s,d):
-    return tuple([(0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))])
+    return tuple([(i[0],0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))])
 
 def expire(a,s):
     return any([th_error(i,j) for i,j in zip(a,s)])
@@ -155,9 +155,9 @@ cpn.add_arc(fc)
 marking = Marking()
 schedule =[(f"#{i}",1,2) for i in range(60)]
 
-marking.set_tokens("active_fleet", [((0, 0, 0),(0, 0, 0),(0, 0, 0))])  # both at time 0
+marking.set_tokens("active_fleet", [(('t1',0, 0, 0),('t2',0, 0, 0),('t3',0, 0, 0))])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
-marking.set_tokens("specs", [(((5,15,20),(6,13,20),(20,30,50)),(4,4,9))])  # both at time 0
+marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  # both at time 0
 marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
