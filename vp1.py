@@ -18,7 +18,7 @@ colset spec = product(list spec_element, list INT);
 
 colset log = STRING;
 colset tok = STRING timed;
-colset wg = INT timed;
+colset wg = product(STRING , INT) timed;
 
 """
 parser = ColorSetParser()
@@ -40,10 +40,10 @@ unsafe = Place("unsafe", tok )
 
 
 
-fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w <= 0)",transition_delay=1)
-maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w>0",transition_delay=0)
+fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
+maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w[-1]>0",transition_delay=0)
 expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
-cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0 <= 0")
+cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
 cleanupfl = Transition("cleanupfl", variables= ["f"])
 
 
@@ -97,7 +97,7 @@ af = Arc(active_fleet,fly,"[a]")
 fa = Arc(fly,active_fleet,"[fl(a,f)]")
 ff = Arc(flights,fly,"[f]")
 wm = Arc(workgroup,maintenance,"[w]")
-mw = Arc(maintenance,workgroup,"[w-1]")
+mw = Arc(maintenance,workgroup,"[(w[0],w[1]-1)]")
 wf = Arc(workgroup,fly,"[w]")
 fw = Arc(fly,workgroup,"[w]")
 
@@ -158,7 +158,7 @@ schedule =[(f"#{i}",1,2) for i in range(60)]
 marking.set_tokens("active_fleet", [((0, 0, 0),(0, 0, 0),(0, 0, 0))])  # both at time 0
 marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
 marking.set_tokens("specs", [(((5,15,20),(6,13,20),(20,30,50)),(4,4,9))])  # both at time 0
-marking.set_tokens("workgroup", [1,1.9], timestamps=[0,25])  # both at time 0
+marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  # both at time 0
 context = EvaluationContext(user_code=user_code)
 from cpnpy.cpn.exporter import export_cpn_to_json
 
