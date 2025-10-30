@@ -71,10 +71,10 @@ def add(x,y):
     return tuple([i+j for i,j in zip(x,y)])
 
 def fl(a,f):
-    return [add(f[1:],i[:-1])+ (i[-1]+1,) for i in a]
+    return tuple([add(f[1:],i[:-1])+ (i[-1]+1,) for i in a])
 
 def reset(a,s,d):
-    return [(0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))]
+    return tuple([(0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))])
 
 def expire(a,s):
     return any([th_error(i,j) for i,j in zip(a,s)])
