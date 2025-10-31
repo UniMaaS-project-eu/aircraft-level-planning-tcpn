@@ -202,8 +202,6 @@ parser.add_argument('--interactive_viewer', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
 args = parser.parse_args()
 
-schedule =[(f"#{i}",1,2) for i in range(20)]
-
 
 from util import prettymarking,json2marking
 
@@ -246,7 +244,7 @@ if args.mode == "manual":
         if not args.no_img:
             viz = CPNGraphViz().apply(cpn, marking, format="png")
             path = viz.save("vizout")
-        # print("Saved to:", path)
+
     prev_clock = None
     while (input("?\r") != 'x' and prev_clock != marking.global_clock):
         prev_clock = marking.global_clock
