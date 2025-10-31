@@ -103,8 +103,8 @@ cpn.add_transition(expire)
 cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
 cpn.add_transition(cleanup_wg)
 
-cleanupfl = Transition("cleanupfl", variables= ["f"])
-cpn.add_transition(cleanupfl)
+# cleanupfl = Transition("cleanupfl", variables= ["f"])
+# cpn.add_transition(cleanupfl)
 
 
 # Arcs
@@ -150,8 +150,7 @@ cpn.add_arc(sf)
 fs = Arc(fly,specs,"[s]")
 cpn.add_arc(fs)
 
-fc = Arc(flights,cleanupfl,"[f]")
-cpn.add_arc(fc)
+
 
 ae = Arc(active_fleet,expire,"[a]")
 cpn.add_arc(ae)
@@ -162,6 +161,11 @@ cpn.add_arc(se)
 eu = Arc(expire,unsafe,"'☠️'")
 cpn.add_arc(eu)
 
+
+
+# fc = Arc(flights,cleanupfl,"[f]")
+# cpn.add_arc(fc)
+# 
 wc = Arc(workgroup,cleanup_wg,"[w,w0]")
 cpn.add_arc(wc)
 
