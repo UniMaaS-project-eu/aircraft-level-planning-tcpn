@@ -73,6 +73,14 @@
             ["2026", 2]
         ],
         "timestamps": [0, 25]
+    },
+    "blackout_periods": {
+        "tokens": [
+            ["sk1", 2],
+            ["sk2", 2],
+            ["sk3", 2],
+            ["sk4", 2]
+        ],
+        "timestamps": [4, 9, 14, 19]
     }
-
 }

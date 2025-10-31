@@ -106,6 +106,17 @@ cpn.add_place(unsafe)
 svc_days = Place("svc_days", tok )
 cpn.add_place(svc_days)
 
+blackout_periods = Place("blackout_periods", wg )
+cpn.add_place(blackout_periods)
+
+svc_delay = Place("svc_delay", wg )
+cpn.add_place(svc_delay)
+
+in_svc = Place("in_svc", tok )
+cpn.add_place(in_svc)
+
+under_maintenance = Place("under_maintenance", airplane )
+cpn.add_place(under_maintenance)
 
 # TRANSITIONS
 fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
@@ -123,13 +134,21 @@ cpn.add_transition(cleanup_wg)
 cleanupfl = Transition("cleanupfl", variables= ["f","t"])
 cpn.add_transition(cleanupfl)
 
+block_maintenance = Transition("block_maintenance", variables= ["b","w"])
+cpn.add_transition(block_maintenance)
+
+delay_maintenance = Transition("delay_maintenance", variables= ["b","x","t"])
+cpn.add_transition(delay_maintenance)
+
+exit_maintenance = Transition("exit_maintenance", variables= ["a","x","t"])
+cpn.add_transition(exit_maintenance)
 
 # Arcs
 am = Arc(active_fleet, maintenance, "[a]")
 cpn.add_arc(am)
 
-ma = Arc(maintenance, active_fleet, "[reset(a,s[0],Duration(TH2(a,s[0]),s[1]))] @+Duration(TH2(a,s[0]),s[1])")
-cpn.add_arc(ma)
+# ma = Arc(maintenance, active_fleet, "[reset(a,s[0],Duration(TH2(a,s[0]),s[1]))] @+Duration(TH2(a,s[0]),s[1])")
+# cpn.add_arc(ma)
 
 sm = Arc(specs,maintenance,"[s]")
 cpn.add_arc(sm)
@@ -149,7 +168,7 @@ cpn.add_arc(ff)
 wm = Arc(workgroup,maintenance,"[w]")
 cpn.add_arc(wm)
 
-mw = Arc(maintenance,workgroup,"[(w[0],w[1]-1)]")
+mw = Arc(maintenance,workgroup,"[(w[0],w[1]-1)] @+Duration(TH2(a,s[0]),s[1])")
 cpn.add_arc(mw)
 
 wf = Arc(workgroup,fly,"[w]")
@@ -186,7 +205,7 @@ cpn.add_arc(fc)
 sc = Arc(svc_days,cleanupfl,"[t]")
 cpn.add_arc(sc)
 
-msd = Arc(maintenance,svc_days,"['d']*Duration(TH2(a,s[0]),s[1])")
+msd = Arc(maintenance,svc_days,"['❎']*Duration(TH2(a,s[0]),s[1])")
 cpn.add_arc(msd)
 
 wc = Arc(workgroup,cleanup_wg,"[w,w0]")
@@ -195,7 +214,56 @@ cpn.add_arc(wc)
 cw = Arc(cleanup_wg,workgroup,"[w]")
 cpn.add_arc(cw)
 
+wbm = Arc(workgroup,block_maintenance,"[w]")
+cpn.add_arc(wbm)
 
+bmw = Arc(block_maintenance,workgroup,"[(w[0],0)]")
+cpn.add_arc(bmw)
+
+bmw2 = Arc(block_maintenance,workgroup,"[w]@+b[-1]")
+cpn.add_arc(bmw2)
+
+bbm = Arc(blackout_periods,block_maintenance,"[b]")
+cpn.add_arc(bbm)
+
+bdm = Arc(blackout_periods,delay_maintenance,"[b]")
+cpn.add_arc(bdm)
+
+sddm = Arc(svc_delay,delay_maintenance,"[x]")
+cpn.add_arc(sddm)
+
+dmsd = Arc(delay_maintenance,svc_delay,"[x+b[-1]]")
+cpn.add_arc(dmsd)
+
+isdm = Arc(in_svc,delay_maintenance,"[t]")
+cpn.add_arc(isdm)
+
+dmis = Arc(delay_maintenance,in_svc,"[t]")
+cpn.add_arc(dmis)
+
+sdem = Arc(svc_delay,exit_maintenance,"[x]")
+cpn.add_arc(sdem)
+
+emsd = Arc(exit_maintenance,svc_delay,"[0]")
+cpn.add_arc(emsd)
+
+isem = Arc(in_svc,exit_maintenance,"[t]")
+cpn.add_arc(isem)
+
+mis = Arc(maintenance,in_svc,"['🔧']")
+cpn.add_arc(mis)
+
+umem = Arc(under_maintenance,exit_maintenance,"[a]")
+cpn.add_arc(umem)
+
+mum = Arc(maintenance,under_maintenance,"[reset(a,s[0],Duration(TH2(a,s[0]),s[1]))] @+Duration(TH2(a,s[0]),s[1])")
+cpn.add_arc(mum)
+
+ema = Arc(exit_maintenance,active_fleet,"[a]@+x")
+cpn.add_arc(ema)
+
+emsd = Arc(exit_maintenance,svc_days,"['❎']*x")
+cpn.add_arc(emsd)
 # Generate Initial Marking
 
 marking = Marking()
@@ -226,7 +294,7 @@ mj = load(open(file,"r"))
 mj = json2marking(mj)
 for place in mj:
     marking.set_tokens(place,mj[place]["tokens"],timestamps=mj[place]["timestamps"])
-
+marking.set_tokens("svc_delay",[0])
 
 
 if not args.no_json:
