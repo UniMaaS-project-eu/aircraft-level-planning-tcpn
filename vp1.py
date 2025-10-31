@@ -188,6 +188,8 @@ parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-o', '--file')
 parser.add_argument('-j', '--no_json', action='store_false')
 parser.add_argument('-i', '--no_img', action='store_false')
+parser.add_argument('-x', '--no_nx', action='store_false')
+parser.add_argument('--interactive_viewer', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
 args = parser.parse_args()
 
@@ -292,3 +294,20 @@ if args.mode == "statespace":
     print("=== State Space Report ===")
     for key, val in report.items():
         print(f"{key}: {val}")
+    
+
+    RG = analyzer.RG
+    if (not args.no_nx )or args.interactive_viewer:
+        from pickle import dump
+        dump(RG,open("vp1RG.pkl","wb"))    
+    if (args.interactive_viewer):
+        from util import interactive_viewer as IV
+        IV(RG)
+    terminals = [node for node in RG.nodes if RG.out_degree(node) == 0]
+    for terminal in terminals:
+        safe = True
+        for t in terminal[1]:  
+            if t[0] == "unsafe" and t[1][0][0] == "☠️":
+                safe = False
+                break
+        print( "SAFE" if safe else "UNSAFE")

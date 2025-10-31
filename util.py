@@ -19,3 +19,10 @@ def json2marking(j):
         for token in place["tokens"]:
             make_hashable(token)
     return j
+
+
+def interactive_viewer(G):
+    import networkx as nx
+    from networkx_viewer import Viewer
+    app = Viewer(G)
+    app.mainloop()
