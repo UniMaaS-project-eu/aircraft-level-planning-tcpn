@@ -278,16 +278,16 @@ if args.mode == "sim":
     else:print("SAFE") 
 
 if args.mode == "statespace":
-    print ("STATE SPACE !!")
+    if args.verbose:print ("STATE SPACE")
     from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
-    print ("creating analyzer ...")  
+    if args.verbose:print ("creating analyzer ...")  
 
     analyzer = StateSpaceAnalyzer(cpn, marking, context) 
-    print ("OK")  
+    if args.verbose:print ("OK")  
     
-    print ("analyzing ...")  
+    if args.verbose:print ("analyzing ...")  
     report = analyzer.summarize()
-    print ("OK")  
+    if args.verbose:print ("OK")  
 
     print("=== State Space Report ===")
     for key, val in report.items():
