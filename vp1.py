@@ -1,7 +1,6 @@
 from cpnpy.cpn.cpn_imp import CPN, Place, Transition, Arc, Marking, EvaluationContext
 from cpnpy.cpn.colorsets import ColorSetParser
-from cpnpy.visualization.visualizer import CPNGraphViz
-
+from argparse import ArgumentParser
 
 
 # Create CPN
@@ -173,7 +172,6 @@ cw = Arc(cleanup_wg,workgroup,"[w]")
 cpn.add_arc(cw)
 
 
-print (f"PN ready")
 # Generate Initial Marking
 schedule =[(f"#{i}",1,2) for i in range(20)]
 
@@ -183,34 +181,33 @@ marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))
 marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  
 marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  
 
-print("Applied Marking")
 
+parser = ArgumentParser()
+parser.add_argument('mode')
+parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('-j', '--no_json', action='store_false')
+parser.add_argument('-i', '--no_img', action='store_false')
+parser.add_argument('-q', '--quiet', action='store_true')
+args = parser.parse_args()
 
+if not args.no_json:
+    from cpnpy.cpn.exporter import export_cpn_to_json
+    exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
+    if not args.quiet:printprint ("exporeded JSON")
 
-from cpnpy.cpn.exporter import export_cpn_to_json
-exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
-print ("exporeded JSON")
+from util import prettymarking
 
+if not args.no_img:
+    from cpnpy.visualization.visualizer import CPNGraphViz
+    viz = CPNGraphViz().apply(cpn, marking, format="png")
+    path = viz.save("vp1")
+    if not args.quiet:print("Saved vizualisation to:", path)
 
-def prettymarking(m):
-    res = ""
-    for place,tokens in m._marking.items():
-        res += f"{place} : [\n"
-        for token in tokens.tokens:
-            res += f"{token} \n"
-        res += "\n]"
-    return res
+if not args.quiet:
+    print("Initial marking:")
+    print(prettymarking(marking))  
 
-viz = CPNGraphViz().apply(cpn, marking, format="png")
-path = viz.save("vp1")
-print("Saved vizualisation to:", path)
-
-
-print("Initial marking:")
-print(prettymarking(marking))  
-from sys import argv
-
-if argv[1] == "manual":
+if args.mode == "manual":
     def sequeun(cpn,marking,context):
         transitions = cpn.transitions
         for t in transitions:
@@ -221,9 +218,9 @@ if argv[1] == "manual":
             print("\n")
         cpn.advance_global_clock(marking)
         print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
-        viz = CPNGraphViz().apply(cpn, marking, format="png")
-        # viz.view()
-        path = viz.save("vizout")
+        if not args.no_img:
+            viz = CPNGraphViz().apply(cpn, marking, format="png")
+            path = viz.save("vizout")
         # print("Saved to:", path)
     prev_clock = None
     while (input("?\r") != 'x' and prev_clock != marking.global_clock):
@@ -236,32 +233,34 @@ if argv[1] == "manual":
         print("UNSAFE") 
     else:print("SAFE") 
 
-if argv[1] == "sim":
+if args.mode == "sim":
     def sequeun(cpn,marking,context):
         transitions = cpn.transitions
         for t in transitions:
             if cpn.is_enabled(t,marking,context):
                 cpn.fire_transition(t,marking,context)
         cpn.advance_global_clock(marking)
-        if argv[-1] == "-v":print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
-        viz = CPNGraphViz().apply(cpn, marking, format="png")
-        # viz.view()
-        path = viz.save("vizout")
-        # print("Saved to:", path)
+        if args.verbose:print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
+        if not args.no_img:
+            viz = CPNGraphViz().apply(cpn, marking, format="png")
+            path = viz.save("vizout")
+
     prev_clock = None
-    print("Running....")
+    if not args.quiet:print("Running....")
     while (prev_clock != marking.global_clock):
         prev_clock = marking.global_clock
-        if argv[-1] == "-v":print("\n\n")
+        if args.verbose:print("\n\n")
 
         sequeun(cpn,marking,context)
         
-    print("Final marking:")
-    print(prettymarking(marking)) 
+    if not args.quiet:
+        print("Final marking:")
+        print(prettymarking(marking)) 
     if len(marking.get_multiset("unsafe").tokens) != 0:
         print("UNSAFE") 
     else:print("SAFE") 
-if argv[1] == "statespace":
+
+if args.mode == "statespace":
     print ("STATE SPACE !!")
     from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
     print ("creating analyzer ...")  
