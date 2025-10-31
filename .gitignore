@@ -1,4 +1,9 @@
 *.json
+!ex_*.json
+!json_template.json
 *.png
+*.pkl
 user*.py
 test*
+__pycache__/*
+__pycache__

@@ -88,6 +88,9 @@ cpn.add_place(logs)
 unsafe = Place("unsafe", tok )
 cpn.add_place(unsafe)
 
+svc_days = Place("svc_days", tok )
+cpn.add_place(svc_days)
+
 
 # TRANSITIONS
 fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
@@ -102,8 +105,8 @@ cpn.add_transition(expire)
 cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
 cpn.add_transition(cleanup_wg)
 
-# cleanupfl = Transition("cleanupfl", variables= ["f"])
-# cpn.add_transition(cleanupfl)
+cleanupfl = Transition("cleanupfl", variables= ["f","t"])
+cpn.add_transition(cleanupfl)
 
 
 # Arcs
@@ -162,9 +165,15 @@ cpn.add_arc(eu)
 
 
 
-# fc = Arc(flights,cleanupfl,"[f]")
-# cpn.add_arc(fc)
-# 
+fc = Arc(flights,cleanupfl,"[f]")
+cpn.add_arc(fc)
+
+sc = Arc(svc_days,cleanupfl,"[t]")
+cpn.add_arc(sc)
+
+msd = Arc(maintenance,svc_days,"['d']*Duration(TH2(a,s[0]),s[1])")
+cpn.add_arc(msd)
+
 wc = Arc(workgroup,cleanup_wg,"[w,w0]")
 cpn.add_arc(wc)
 

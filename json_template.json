@@ -1,0 +1,19 @@
+{
+    "active_fleet": {
+        "tokens": [],
+        "timestamps": []
+    },
+    "flights": {
+        "tokens": [],
+        "timestamps": []
+    },
+    "specs": {
+        "tokens": [],
+        "timestamps": []
+    },
+    "workgroup": {
+        "tokens": [],
+        "timestamps": []
+    }
+
+}
