@@ -173,29 +173,43 @@ cpn.add_arc(cw)
 
 
 # Generate Initial Marking
-schedule =[(f"#{i}",1,2) for i in range(20)]
 
 marking = Marking()
-marking.set_tokens("active_fleet", [(('t1',0, 0, 0),('t2',0, 0, 0),('t3',0, 0, 0))])  
-marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  
-marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  
-marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  
+# schedule =[(f"#{i}",1,2) for i in range(20)]
+# marking.set_tokens("active_fleet", [(('t1',0, 0, 0),('t2',0, 0, 0),('t3',0, 0, 0))])  
+# marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  
+# marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  
+# marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  
 
 
 parser = ArgumentParser()
 parser.add_argument('mode')
 parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('-o', '--file')
 parser.add_argument('-j', '--no_json', action='store_false')
 parser.add_argument('-i', '--no_img', action='store_false')
 parser.add_argument('-q', '--quiet', action='store_true')
 args = parser.parse_args()
+
+schedule =[(f"#{i}",1,2) for i in range(20)]
+
+
+from util import prettymarking,json2marking
+
+file = args.file if args.file is not None else "ex_small.json"
+from json import load
+mj = load(open(file,"r"))
+mj = json2marking(mj)
+for place in mj:
+    marking.set_tokens(place,mj[place]["tokens"],timestamps=mj[place]["timestamps"])
+
+
 
 if not args.no_json:
     from cpnpy.cpn.exporter import export_cpn_to_json
     exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
     if not args.quiet:printprint ("exporeded JSON")
 
-from util import prettymarking
 
 if not args.no_img:
     from cpnpy.visualization.visualizer import CPNGraphViz
