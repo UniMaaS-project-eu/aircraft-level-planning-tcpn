@@ -2,6 +2,12 @@ from cpnpy.cpn.cpn_imp import CPN, Place, Transition, Arc, Marking, EvaluationCo
 from cpnpy.cpn.colorsets import ColorSetParser
 from cpnpy.visualization.visualizer import CPNGraphViz
 
+
+
+# Create CPN
+cpn = CPN()
+
+
 # Define color sets
 cs_defs = """
 colset INT = int timed;
@@ -30,43 +36,21 @@ tok =colorsets["tok"]
 wg =colorsets["wg"]
 log =colorsets["log"]
 
-# PLACES
-active_fleet = Place("active_fleet", airplane)
-flights = Place("flights", flight)
-specs = Place("specs", spec)
-workgroup = Place("workgroup", wg)
-logs = Place("logs", log)
-unsafe = Place("unsafe", tok )
-
-
-
-fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
-maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w[-1]>0",transition_delay=0)
-expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
-cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
-cleanupfl = Transition("cleanupfl", variables= ["f"])
-
 
 # Evaluation context with a user-defined function
 user_code = """
 
 def th1(a,s):
     return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
-
-
 def th2(a,s):
     return any(i>0.6*(j) for i,j in zip(a[1:],s[1:]))
-
 def th_error(a,s):
     return any([i>=j for i,j in zip(a[1:],s[1:])])
 
-
 def TH1(a,s):
     return [th1(i,j) for i,j in zip(a,s)]
-
 def TH2(a,s):
     return [th2(i,j) for i,j in zip(a,s)]
-
 def e(a,s):
     return any(TH1(a,s))
 
@@ -75,94 +59,131 @@ def add(x,y):
 
 def fl(a,f):
     return tuple([(i[0],) + add(f[1:],i[1:-1])+ (i[-1]+1,) for i in a])
-
 def reset(a,s,d):
     return tuple([(i[0],0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))])
-
 def expire(a,s):
     return any([th_error(i,j) for i,j in zip(a,s)])
 
 def Duration(th,d):
     return sum([i*j for i,j in zip(th,d)])
     """
-# context = EvaluationContext()
+context = EvaluationContext(user_code=user_code)
 
 
-am = Arc(active_fleet, maintenance, "[a]")
-# ma = Arc(maintenance, active_fleet, "[reset(a,s[0])] @+888")
-ma = Arc(maintenance, active_fleet, "[reset(a,s[0],Duration(TH2(a,s[0]),s[1]))] @+Duration(TH2(a,s[0]),s[1])")
-sm = Arc(specs,maintenance,"[s]")
-ms = Arc(maintenance,specs,"[s]")
-af = Arc(active_fleet,fly,"[a]")
-fa = Arc(fly,active_fleet,"[fl(a,f)]")
-ff = Arc(flights,fly,"[f]")
-wm = Arc(workgroup,maintenance,"[w]")
-mw = Arc(maintenance,workgroup,"[(w[0],w[1]-1)]")
-wf = Arc(workgroup,fly,"[w]")
-fw = Arc(fly,workgroup,"[w]")
-
-ml = Arc(maintenance,logs,"[f'Plane: {a}, Tasks: {TH2(a,s[0])}, Duration: {Duration(TH2(a,s[0]),s[1])}']")
-sf = Arc(specs,fly,"[s]")
-fs = Arc(fly,specs,"[s]")
-fc = Arc(flights,cleanupfl,"[f]")
-ae = Arc(active_fleet,expire,"[a]")
-se = Arc(specs,expire,"[s]")
-eu = Arc(expire,unsafe,"'☠️'")
-
-wc = Arc(workgroup,cleanup_wg,"[w,w0]")
-cw = Arc(cleanup_wg,workgroup,"[w]")
-
-
-cpn = CPN()
-
-
+# PLACES
+active_fleet = Place("active_fleet", airplane)
 cpn.add_place(active_fleet)
+
+flights = Place("flights", flight)
 cpn.add_place(flights)
+
+specs = Place("specs", spec)
 cpn.add_place(specs)
+
+workgroup = Place("workgroup", wg)
 cpn.add_place(workgroup)
+
+logs = Place("logs", log)
 cpn.add_place(logs)
+
+unsafe = Place("unsafe", tok )
 cpn.add_place(unsafe)
 
+
+# TRANSITIONS
+fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
 cpn.add_transition(fly)
+
+maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w[-1]>0",transition_delay=0)
 cpn.add_transition(maintenance)
+
+expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
 cpn.add_transition(expire)
+
+cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
 cpn.add_transition(cleanup_wg)
+
+cleanupfl = Transition("cleanupfl", variables= ["f"])
 cpn.add_transition(cleanupfl)
 
+
+# Arcs
+am = Arc(active_fleet, maintenance, "[a]")
 cpn.add_arc(am)
+
+ma = Arc(maintenance, active_fleet, "[reset(a,s[0],Duration(TH2(a,s[0]),s[1]))] @+Duration(TH2(a,s[0]),s[1])")
 cpn.add_arc(ma)
+
+sm = Arc(specs,maintenance,"[s]")
 cpn.add_arc(sm)
+
+ms = Arc(maintenance,specs,"[s]")
 cpn.add_arc(ms)
+
+af = Arc(active_fleet,fly,"[a]")
 cpn.add_arc(af)
+
+fa = Arc(fly,active_fleet,"[fl(a,f)]")
 cpn.add_arc(fa)
+
+ff = Arc(flights,fly,"[f]")
 cpn.add_arc(ff)
+
+wm = Arc(workgroup,maintenance,"[w]")
 cpn.add_arc(wm)
+
+mw = Arc(maintenance,workgroup,"[(w[0],w[1]-1)]")
 cpn.add_arc(mw)
-cpn.add_arc(ml)
-cpn.add_arc(sf)
-cpn.add_arc(fs)
-cpn.add_arc(ae)
-cpn.add_arc(se)
-cpn.add_arc(eu)
+
+wf = Arc(workgroup,fly,"[w]")
 cpn.add_arc(wf)
+
+fw = Arc(fly,workgroup,"[w]")
 cpn.add_arc(fw)
-cpn.add_arc(wc)
-cpn.add_arc(cw)
+
+ml = Arc(maintenance,logs,"[f'Plane: {a}, Tasks: {TH2(a,s[0])}, Duration: {Duration(TH2(a,s[0]),s[1])}']")
+cpn.add_arc(ml)
+
+sf = Arc(specs,fly,"[s]")
+cpn.add_arc(sf)
+
+fs = Arc(fly,specs,"[s]")
+cpn.add_arc(fs)
+
+fc = Arc(flights,cleanupfl,"[f]")
 cpn.add_arc(fc)
 
+ae = Arc(active_fleet,expire,"[a]")
+cpn.add_arc(ae)
 
+se = Arc(specs,expire,"[s]")
+cpn.add_arc(se)
+
+eu = Arc(expire,unsafe,"'☠️'")
+cpn.add_arc(eu)
+
+wc = Arc(workgroup,cleanup_wg,"[w,w0]")
+cpn.add_arc(wc)
+
+cw = Arc(cleanup_wg,workgroup,"[w]")
+cpn.add_arc(cw)
+
+
+print (f"PN ready")
+# Generate Initial Marking
+schedule =[(f"#{i}",1,2) for i in range(20)]
 
 marking = Marking()
-schedule =[(f"#{i}",1,2) for i in range(60)]
+marking.set_tokens("active_fleet", [(('t1',0, 0, 0),('t2',0, 0, 0),('t3',0, 0, 0))])  
+marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  
+marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  
+marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  
 
-marking.set_tokens("active_fleet", [(('t1',0, 0, 0),('t2',0, 0, 0),('t3',0, 0, 0))])  # both at time 0
-marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  # both at time 0
-marking.set_tokens("specs", [((('t1',5,15,20),('t2',6,13,20),('t3',20,30,50)),(4,4,9))])  # both at time 0
-marking.set_tokens("workgroup", [('2025',2),('2026',2)], timestamps=[0,25])  # both at time 0
-context = EvaluationContext(user_code=user_code)
+print("Applied Marking")
+
+
+
 from cpnpy.cpn.exporter import export_cpn_to_json
-
-# # Assuming you have a CPN, marking, and context objects as before
 exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
 print ("exporeded JSON")
 
@@ -175,12 +196,12 @@ def prettymarking(m):
             res += f"{token} \n"
         res += "\n]"
     return res
+
 viz = CPNGraphViz().apply(cpn, marking, format="png")
-    # viz.view()
-
-
 path = viz.save("vp1")
-print("Saved to:", path)
+print("Saved vizualisation to:", path)
+
+
 print("Initial marking:")
 print(prettymarking(marking))  
 from sys import argv
@@ -237,9 +258,16 @@ if argv[1] == "sim":
         print("UNSAFE") 
     else:print("SAFE") 
 if argv[1] == "statespace":
+    print ("STATE SPACE !!")
     from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
-    analyzer = StateSpaceAnalyzer(cpn, marking, context)   
+    print ("creating analyzer ...")  
+
+    analyzer = StateSpaceAnalyzer(cpn, marking, context) 
+    print ("OK")  
+    
+    print ("analyzing ...")  
     report = analyzer.summarize()
+    print ("OK")  
 
     print("=== State Space Report ===")
     for key, val in report.items():
