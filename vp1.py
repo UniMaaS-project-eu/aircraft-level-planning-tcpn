@@ -270,6 +270,9 @@ if args.mode == "sim":
     if not args.quiet:
         print("Final marking:")
         print(prettymarking(marking)) 
+    else:
+        for tok in marking.get_multiset("logs").tokens:
+            print (tok)
     if len(marking.get_multiset("unsafe").tokens) != 0:
         print("UNSAFE") 
     else:print("SAFE") 
