@@ -1,3 +1,5 @@
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "cpn-py"))
 from cpnpy.cpn.cpn_imp import CPN, Place, Transition, Arc, Marking, EvaluationContext
 from cpnpy.cpn.colorsets import ColorSetParser
 from argparse import ArgumentParser
@@ -38,6 +40,7 @@ log =colorsets["log"]
 
 # Evaluation context with a user-defined function
 user_code = """
+import math
 
 def th1(a,s):
     return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
@@ -54,18 +57,32 @@ def e(a,s):
     return any(TH1(a,s))
 
 def add(x,y):
+    # normalize inputs as tuples
+    x = tuple(x)
+    y = tuple(y)
     return tuple([i+j for i,j in zip(x,y)])
 
 def fl(a,f):
-    return tuple([(i[0],) + add(f[1:],i[1:-1])+ (i[-1]+1,) for i in a])
+    a = [tuple(i) for i in a]
+    f = tuple(f)
+    return tuple([(i[0],) + add(f[1:], i[1:-1]) + (i[-1]+1,) for i in a])
+
 def reset(a,s,d):
-    return tuple([(i[0],0,0,0) if th else i[:-1]+(i[-1]+d,) for i,th in zip(a,TH2(a,s))])
+    a = [tuple(i) for i in a]
+    s = [tuple(i) for i in s]
+    return tuple([
+        (i[0],0,0,0) if th else tuple(i[:-1]) + (i[-1]+d,)
+        for i,th in zip(a,TH2(a,s))
+    ])
+
 def expire(a,s):
+    a = [tuple(i) for i in a]
+    s = [tuple(i) for i in s]
     return any([th_error(i,j) for i,j in zip(a,s)])
 
 def Duration(th,d):
-    return sum([i*j for i,j in zip(th,d)])
-    """
+    return math.ceil(sum([i*j for i,j in zip(th,d)]) / 8)
+"""
 context = EvaluationContext(user_code=user_code)
 
 
@@ -205,7 +222,7 @@ args = parser.parse_args()
 
 from util import prettymarking,json2marking
 
-file = args.file if args.file is not None else "ex_small.json"
+file = args.file if args.file is not None else "dataset_initial_marking.json"
 from json import load
 mj = load(open(file,"r"))
 mj = json2marking(mj)
@@ -279,9 +296,9 @@ if args.mode == "sim":
     if not args.quiet:
         print("Final marking:")
         print(prettymarking(marking)) 
-    else:
-        for tok in marking.get_multiset("logs").tokens:
-            print (tok)
+    # else:
+    #     for tok in marking.get_multiset("logs").tokens:
+    #         print (tok)
     if len(marking.get_multiset("unsafe").tokens) != 0:
         print("UNSAFE") 
     else:print("SAFE") 
