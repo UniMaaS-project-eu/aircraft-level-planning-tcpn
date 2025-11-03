@@ -16,8 +16,8 @@ def make_hashable(obj):
         return obj
 def json2marking(j):
     for place in j.values():
-        for token in place["tokens"]:
-            make_hashable(token)
+        for idx,token in enumerate(place["tokens"]):
+            place["tokens"][idx] = make_hashable(token)
     return j
 
 
