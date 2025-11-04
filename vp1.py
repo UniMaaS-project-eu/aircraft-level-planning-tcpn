@@ -1,5 +1,3 @@
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "cpn-py"))
 from cpnpy.cpn.cpn_imp import CPN, Place, Transition, Arc, Marking, EvaluationContext
 from cpnpy.cpn.colorsets import ColorSetParser
 from argparse import ArgumentParser
