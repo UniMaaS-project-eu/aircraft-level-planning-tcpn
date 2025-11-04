@@ -152,7 +152,7 @@ marking.set_tokens("active_fleet", [tuple(airplane_token)])  # Aircraft utilizat
 marking.set_tokens("specs", [hashable_spec_token])
 marking.set_tokens("workgroup", [1], timestamps=[1])
 
-num_days = 68000
+num_days = 20
 flight_schedule = []
 flight_id = 0
 for day in range(num_days):
@@ -194,9 +194,9 @@ if len(argv) > 1 and argv[1] == "manual":
             if cpn.is_enabled(t, marking, context):
                 cpn.fire_transition(t, marking, context)
         cpn.advance_global_clock(marking)
-        print(f"time:{marking.global_clock}\n active_fleet:{(marking.get_multiset("active_fleet").tokens)}")
-        print(f"time:{marking.global_clock}\n specs:{(marking.get_multiset("specs").tokens)}")
-        print(f"time:{marking.global_clock}\n logs:{(marking.get_multiset("logs").tokens)}")
+        print(f"time:{marking.global_clock}\n active_fleet:{(marking.get_multiset('active_fleet').tokens)}")
+        print(f"time:{marking.global_clock}\n specs:{(marking.get_multiset('specs').tokens)}")
+        print(f"time:{marking.global_clock}\n logs:{(marking.get_multiset('logs').tokens)}")
         viz = CPNGraphViz().apply(cpn, marking, format="png")
         path = viz.save("vizout")
 
