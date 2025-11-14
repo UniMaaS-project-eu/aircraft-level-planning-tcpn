@@ -210,9 +210,9 @@ parser = ArgumentParser()
 parser.add_argument('mode')
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-o', '--file')
-parser.add_argument('-j', '--no_json', action='store_false')
-parser.add_argument('-i', '--no_img', action='store_false')
-parser.add_argument('-x', '--no_nx', action='store_false')
+parser.add_argument('-j', '--no_json', action='store_true')
+parser.add_argument('-i', '--no_img', action='store_true')
+parser.add_argument('-x', '--no_nx', action='store_true')
 parser.add_argument('--interactive_viewer', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
 args = parser.parse_args()
@@ -232,7 +232,7 @@ for place in mj:
 if not args.no_json:
     from cpnpy.cpn.exporter import export_cpn_to_json
     exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
-    if not args.quiet:printprint ("exporeded JSON")
+    if not args.quiet:print ("exporeded JSON")
 
 
 if not args.no_img:

@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-
+from sys import argv
 EXCEL_FILE = "new_dataset_changed.xlsx"
 SHEET_NAME = "Aircraft_1"
 OUTPUT_FILE = "dataset_initial_marking.json"
@@ -21,7 +21,7 @@ active_fleet = {
 }
 
 
-num_days = 20
+num_days = int(argv[1])
 flight_schedule = [[f"#{i}", 1, 2] for i in range(num_days)]
 flight_timestamps = list(range(num_days))
 flights = {
