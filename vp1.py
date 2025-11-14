@@ -295,6 +295,8 @@ mj = json2marking(mj)
 for place in mj:
     marking.set_tokens(place,mj[place]["tokens"],timestamps=mj[place]["timestamps"])
 marking.set_tokens("svc_delay",[0])
+# schedule =[(f"#{i}",1,2) for i in range(365)]
+# marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  
 
 
 if not args.no_json:
