@@ -41,9 +41,10 @@ user_code = """
 import math
 
 def th1(a,s):
-    return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
+
+    return any(i>0.9*(j) for i,j in zip(a[1:],s[1:]))
 def th2(a,s):
-    return any(i>0.6*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>0.1*(j) for i,j in zip(a[1:],s[1:]))
 def th_error(a,s):
     return any([i>=j for i,j in zip(a[1:],s[1:])])
 
@@ -264,6 +265,18 @@ cpn.add_arc(ema)
 
 emsd = Arc(exit_maintenance,svc_days,"['❎']*x")
 cpn.add_arc(emsd)
+
+in1 = Arc(in_svc,block_maintenance,"INHIBITOR")
+cpn.add_arc(in1)
+
+
+in2 = Arc(blackout_periods,exit_maintenance,"INHIBITOR")
+cpn.add_arc(in2)
+
+in3 = Arc(blackout_periods,maintenance,"INHIBITOR")
+cpn.add_arc(in3)
+
+
 # Generate Initial Marking
 
 marking = Marking()
@@ -285,6 +298,7 @@ parser.add_argument('--interactive_viewer', action='store_true')
 parser.add_argument('--nx_draw', action='store_true')
 parser.add_argument('--fullmarking', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
+
 args = parser.parse_args()
 
 
@@ -346,21 +360,25 @@ if args.mode == "manual":
 if args.mode == "sim":
     def sequeun(cpn,marking,context):
         transitions = cpn.transitions
+        print(f"Firing ... ",end = '\r')
         for t in transitions:
             if cpn.is_enabled(t,marking,context):
                 cpn.fire_transition(t,marking,context)
         cpn.advance_global_clock(marking)
+        print(f"Visualising ... ",end = '\r')
         if args.verbose:print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
         if not args.no_img:
             viz = CPNGraphViz().apply(cpn, marking, format="png")
             path = viz.save("vizout")
+        print(f"                                                        ",end = '\r')
+        
 
     prev_clock = None
     if not args.quiet:print("Running....")
     while (prev_clock != marking.global_clock):
         prev_clock = marking.global_clock
         if args.verbose:print("\n\n")
-
+        print([i.name for i in cpn.transitions if cpn.is_enabled(i,marking,context)])
         sequeun(cpn,marking,context)
         
     if not args.quiet:
