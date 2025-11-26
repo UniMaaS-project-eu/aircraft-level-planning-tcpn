@@ -42,9 +42,9 @@ import math
 
 def th1(a,s):
 
-    return any(i>0.9*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
 def th2(a,s):
-    return any(i>0.1*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>0.5*(j) for i,j in zip(a[1:],s[1:]))
 def th_error(a,s):
     return any([i>=j for i,j in zip(a[1:],s[1:])])
 
@@ -80,7 +80,7 @@ def expire(a,s):
     return any([th_error(i,j) for i,j in zip(a,s)])
 
 def Duration(th,d):
-    return math.ceil(sum([i*j for i,j in zip(th,d)]) / 8)
+    return math.ceil(max([i*j for i,j in zip(th,d)]) / 8)
 """
 context = EvaluationContext(user_code=user_code)
 

@@ -23,6 +23,13 @@ active_fleet = {
 
 num_days = int(argv[1])
 flight_schedule = [[f"#{i}", 1, 2] for i in range(num_days)]
+bo_periods = [[f"sk{i}", 2] for i in range(0,num_days,7)]
+bo_timestamps = [i for i in range(0,num_days,7)] 
+bo={
+    "tokens":bo_periods,
+    "timestamps":bo_timestamps
+}
+
 flight_timestamps = list(range(num_days))
 flights = {
     "tokens": flight_schedule,
@@ -44,7 +51,7 @@ specs = {
 }
 
 workgroup = {
-    "tokens": [["2025", 1], ["2026", 1]],
+    "tokens": [["2025", 2], ["2026", 2]],
     "timestamps": [0, 365]
 }
 
@@ -52,7 +59,8 @@ marking_json = {
     "active_fleet": active_fleet,
     "flights": flights,
     "specs": specs,
-    "workgroup": workgroup
+    "workgroup": workgroup,
+    "blackout_periods":bo
 }
 
 with open(OUTPUT_FILE, "w") as f:
