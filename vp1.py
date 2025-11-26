@@ -119,7 +119,7 @@ under_maintenance = Place("under_maintenance", airplane )
 cpn.add_place(under_maintenance)
 
 # TRANSITIONS
-fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0)",transition_delay=1)
+fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0 and not expire(a,s[0]))",transition_delay=0)
 cpn.add_transition(fly)
 
 maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w[-1]>0",transition_delay=0)
@@ -159,7 +159,7 @@ cpn.add_arc(ms)
 af = Arc(active_fleet,fly,"[a]")
 cpn.add_arc(af)
 
-fa = Arc(fly,active_fleet,"[fl(a,f)]")
+fa = Arc(fly,active_fleet,"[fl(a,f)] @+1")
 cpn.add_arc(fa)
 
 ff = Arc(flights,fly,"[f]")
@@ -282,11 +282,13 @@ parser.add_argument('-j', '--no_json', action='store_true')
 parser.add_argument('-i', '--no_img', action='store_true')
 parser.add_argument('-x', '--no_nx', action='store_true')
 parser.add_argument('--interactive_viewer', action='store_true')
+parser.add_argument('--nx_draw', action='store_true')
+parser.add_argument('--fullmarking', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
 args = parser.parse_args()
 
 
-from util import prettymarking,json2marking
+from util import prettymarking,json2marking,custom_marking
 
 file = args.file if args.file is not None else "dataset_initial_marking.json"
 from json import load
@@ -325,7 +327,7 @@ if args.mode == "manual":
                 cpn.fire_transition(t,marking,context)
             print("\n")
         cpn.advance_global_clock(marking)
-        print (f"time:{marking.global_clock}\n marking:{prettymarking(marking)}")
+        print (f"time:{marking.global_clock}\n marking:{custom_marking(marking)}")
         if not args.no_img:
             viz = CPNGraphViz().apply(cpn, marking, format="png")
             path = viz.save("vizout")
@@ -395,6 +397,9 @@ if args.mode == "statespace":
     if (args.interactive_viewer):
         from util import interactive_viewer as IV
         IV(RG)
+    if (args.nx_draw):
+        from util import nx_draw as draw
+        draw(RG)
     terminals = [node for node in RG.nodes if RG.out_degree(node) == 0]
     for terminal in terminals:
         safe = True
@@ -403,3 +408,12 @@ if args.mode == "statespace":
                 safe = False
                 break
         print( "SAFE" if safe else "UNSAFE")
+        Plane = "Plane"
+        Duration = "Duration"
+        Tasks = "Tasks"
+        for t in terminal[1]: 
+            if t[0] == "logs":
+                for log in t[1]:
+                    marking = eval("{"+log[0].replace("True","1").replace("False","0")+"}")
+                    timestamp = log[-1]
+                    print (f"   WP : {marking['Tasks']} , {timestamp} ")
