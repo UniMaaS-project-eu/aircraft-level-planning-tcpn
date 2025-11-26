@@ -154,8 +154,11 @@ def nx_draw(G):
     start = [node for node, in_degree in G_int.in_degree() if in_degree == 0][0]
    
     pos = hierarchy_pos(G_int, root=start)
+    edge_labels = dict([((n1, n2), d['transition'])
+                    for n1, n2, d in G_int.edges(data=True)])
 
     nx.draw(G_int,pos,with_labels=True,node_color=node_colors)
+    nx.draw_networkx_edge_labels(G_int,pos,edge_labels=edge_labels)
    
     dump(labels,open('statespacelabels.json','w'))
     show()
