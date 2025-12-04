@@ -7,3 +7,4 @@ user*.py
 test*
 __pycache__/*
 __pycache__
+*.xlsx
