@@ -42,9 +42,9 @@ import math
 
 def th1(a,s):
 
-    return any(i>0.8*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>0.7*(j) for i,j in zip(a[1:],s[1:]))
 def th2(a,s):
-    return any(i>0.5*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>0.3*(j) for i,j in zip(a[1:],s[1:]))
 def th_error(a,s):
     return any([i>=j for i,j in zip(a[1:],s[1:])])
 
