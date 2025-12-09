@@ -104,8 +104,8 @@ cpn.add_place(logs)
 unsafe = Place("unsafe", tok )
 cpn.add_place(unsafe)
 
-svc_days = Place("svc_days", tok )
-cpn.add_place(svc_days)
+# svc_days = Place("svc_days", tok )
+# cpn.add_place(svc_days)
 
 blackout_periods = Place("blackout_periods", wg )
 cpn.add_place(blackout_periods)
@@ -132,7 +132,7 @@ cpn.add_transition(expire)
 cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
 cpn.add_transition(cleanup_wg)
 
-cleanupfl = Transition("cleanupfl", variables= ["f","t"])
+cleanupfl = Transition("cleanupfl", variables= ["f"])
 cpn.add_transition(cleanupfl)
 
 block_maintenance = Transition("block_maintenance", variables= ["b","w"])
@@ -203,11 +203,14 @@ cpn.add_arc(eu)
 fc = Arc(flights,cleanupfl,"[f]")
 cpn.add_arc(fc)
 
-sc = Arc(svc_days,cleanupfl,"[t]")
+# sc = Arc(svc_days,cleanupfl,"[t]")
+# cpn.add_arc(sc)
+sc = Arc(active_fleet,cleanupfl,"INHIBITOR")
 cpn.add_arc(sc)
-
-msd = Arc(maintenance,svc_days,"['❎']*Duration(TH2(a,s[0]),s[1])")
-cpn.add_arc(msd)
+mc = Arc(under_maintenance,cleanupfl,"INHIBITOR")
+cpn.add_arc(mc)
+# msd = Arc(maintenance,svc_days,"['❎']*Duration(TH2(a,s[0]),s[1])")
+# cpn.add_arc(msd)
 
 wc = Arc(workgroup,cleanup_wg,"[w,w0]")
 cpn.add_arc(wc)
@@ -263,8 +266,8 @@ cpn.add_arc(mum)
 ema = Arc(exit_maintenance,active_fleet,"[a]@+x")
 cpn.add_arc(ema)
 
-emsd = Arc(exit_maintenance,svc_days,"['❎']*x")
-cpn.add_arc(emsd)
+# emsd = Arc(exit_maintenance,svc_days,"['❎']*x")
+# cpn.add_arc(emsd)
 
 in1 = Arc(in_svc,block_maintenance,"INHIBITOR")
 cpn.add_arc(in1)
@@ -341,7 +344,7 @@ if args.mode == "manual":
                 cpn.fire_transition(t,marking,context)
             print("\n")
         cpn.advance_global_clock(marking)
-        print (f"time:{marking.global_clock}\n marking:{custom_marking(marking)}")
+        print (f"time:{marking.global_clock}\n marking:{custom_marking(marking,args)}")
         if not args.no_img:
             viz = CPNGraphViz().apply(cpn, marking, format="png")
             path = viz.save("vizout")

@@ -106,7 +106,7 @@ def color_nodes(G, index_to_label, unsafe_key="unsafe"):
 
     return colors
 
-def custom_marking(m):
+def custom_marking(m,args):
     if args.fullmarking:
         return(prettymarking(m))
     else:
