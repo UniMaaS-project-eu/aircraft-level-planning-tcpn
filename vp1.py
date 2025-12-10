@@ -437,4 +437,52 @@ if args.mode == "statespace":
                 for log in t[1]:
                     marking = eval("{"+log[0].replace("True","1").replace("False","0")+"}")
                     timestamp = log[-1]
-                    print (f"   WP : {marking['Tasks']} , {timestamp} ")
+                    print ("{"+f" tasks: {marking['Tasks']}, duration : {marking['Duration']} , timestamp : {timestamp} "+"}")
+
+if args.mode == "res":
+    if args.verbose:print ("STATE SPACE")
+    from cpnpy.analysis.analyzer import StateSpaceAnalyzer 
+    if args.verbose:print ("creating analyzer ...")  
+
+    analyzer = StateSpaceAnalyzer(cpn, marking, context) 
+    if args.verbose:print ("OK")  
+    
+    if args.verbose:print ("analyzing ...")  
+    report = analyzer.summarize()
+    if args.verbose:print ("OK")  
+
+
+
+    RG = analyzer.RG
+    if (not args.no_nx )or args.interactive_viewer:
+        from pickle import dump
+        dump(RG,open("vp1RG.pkl","wb"))    
+    if (args.interactive_viewer):
+        from util import interactive_viewer as IV
+        IV(RG)
+    if (args.nx_draw):
+        from util import nx_draw as draw
+        draw(RG)
+    terminals = [node for node in RG.nodes if RG.out_degree(node) == 0]
+    print("[")
+    for terminal in terminals:
+        print(" {")
+        safe = True
+        for t in terminal[1]:  
+            if t[0] == "unsafe" and t[1][0][0] == "☠️":
+                safe = False
+                break
+        print( "    status : "+("'SAFE'" if safe else "'UNSAFE'" )+",")
+        Plane = "Plane"
+        Duration = "Duration"
+        Tasks = "Tasks"
+        for t in terminal[1]: 
+            if t[0] == "logs":
+                print("    wps:[")
+                for log in t[1]:
+                    marking = eval("{"+log[0].replace("True","1").replace("False","0")+"}")
+                    timestamp = log[-1]
+                    print ("        {"+f" 'tasks': {marking['Tasks']}, 'duration' : {marking['Duration']} , 'timestamp' : {timestamp} "+"},")
+                print("     ]")
+        print(" },")
+    print("]")
