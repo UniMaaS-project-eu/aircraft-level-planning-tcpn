@@ -140,7 +140,7 @@ def _custom_marking(m):
             res += "\n]\n"
     return res
 
-def nx_draw(G):
+def nx_draw(G,with_labels=False,with_t_labels=False,with_p_labels=False):
     import re
     import networkx as nx
     from json import dump
@@ -157,8 +157,9 @@ def nx_draw(G):
     edge_labels = dict([((n1, n2), d['transition'])
                     for n1, n2, d in G_int.edges(data=True)])
 
-    nx.draw(G_int,pos,with_labels=True,node_color=node_colors)
-    nx.draw_networkx_edge_labels(G_int,pos,edge_labels=edge_labels)
+    nx.draw(G_int,pos,with_labels=with_labels or with_p_labels,node_color=node_colors)
+    if with_labels or with_t_labels:
+        nx.draw_networkx_edge_labels(G_int,pos,edge_labels=edge_labels)
    
     dump(labels,open('statespacelabels.json','w'))
     show()
