@@ -129,7 +129,7 @@ cpn.add_transition(maintenance)
 expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
 cpn.add_transition(expire)
 
-cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= 0")
+cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= w[-1]")
 cpn.add_transition(cleanup_wg)
 
 cleanupfl = Transition("cleanupfl", variables= ["f"])
