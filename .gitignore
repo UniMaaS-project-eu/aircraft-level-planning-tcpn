@@ -8,3 +8,5 @@ test*
 __pycache__/*
 __pycache__
 *.xlsx
+real_data
+real_data/*
