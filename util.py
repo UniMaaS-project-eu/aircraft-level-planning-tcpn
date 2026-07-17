@@ -140,11 +140,11 @@ def _custom_marking(m):
             res += "\n]\n"
     return res
 
-def nx_draw(G,with_labels=False,with_t_labels=False,with_p_labels=False):
+def nx_draw(G,with_labels=False,with_t_labels=False,with_p_labels=False,filename=""):
     import re
     import networkx as nx
     from json import dump
-    from matplotlib.pyplot  import show
+    from matplotlib.pyplot  import show,savefig
     G_int,labels =  labels2indices(G)
 
     node_colors = color_nodes(G_int, labels)
@@ -162,4 +162,123 @@ def nx_draw(G,with_labels=False,with_t_labels=False,with_p_labels=False):
         nx.draw_networkx_edge_labels(G_int,pos,edge_labels=edge_labels)
    
     dump(labels,open('statespacelabels.json','w'))
-    show()
+    if filename!="":
+        savefig(f"{filename}.png", format="PNG")
+    else:    
+        show()
+
+def prune_linear_nodes(G: nx.DiGraph) -> nx.DiGraph:
+    print("prunning nodes ...")
+    """
+    Prune all nodes with in_degree == 1 and out_degree == 1.
+    Efficient O(V+E) using a queue.
+    Preserves edge attributes (transition).
+    """
+    import networkx as nx
+    from collections import deque
+
+    G = G.copy()
+
+    q = deque(
+        n for n in G.nodes
+        if G.in_degree(n) == 1 and G.out_degree(n) == 1
+    )
+
+    while q:
+        v = q.popleft()
+
+        if v not in G:
+            continue
+        if G.in_degree(v) != 1 or G.out_degree(v) != 1:
+            continue
+
+        u = next(G.predecessors(v))
+        w = next(G.successors(v))
+
+        # Merge edge attributes
+        in_data  = G.get_edge_data(u, v, default={})
+        out_data = G.get_edge_data(v, w, default={})
+
+        merged = {}
+        if "transition" in in_data or "transition" in out_data:
+            t1 = in_data.get("transition", "")
+            t2 = out_data.get("transition", "")
+            merged["transition"] = f"{t1}".strip(";")
+
+        if u != w and not G.has_edge(u, w):
+            G.add_edge(u, w, **merged)
+
+        # Remove node
+        G.remove_node(v)
+
+        # Re-check affected neighbors
+        for x in (u, w):
+            if x in G and G.in_degree(x) == 1 and G.out_degree(x) == 1:
+                q.append(x)
+
+    return G
+
+def nx_draw_pruned(
+    G,
+    with_labels=False,
+    with_t_labels=False,
+    with_p_labels=False,
+    filename=""
+):
+    """
+    Same behavior as nx_draw, but runs on a pruned DAG.
+    """
+    import re
+    import networkx as nx
+    from json import dump
+    from matplotlib.pyplot import show,savefig
+
+    # 🔹 PRUNE FIRST
+    G = prune_linear_nodes(G)
+
+    # 🔹 SAME LOGIC AS nx_draw BELOW
+    
+    G_int, labels = labels2indices(G)
+
+    print(f"Coloring nodes ....")
+    node_colors = color_nodes(G_int, labels)
+    labels_dict = dict(labels)
+
+    print(f"Relabeling nodes ....")
+
+    G_int = nx.relabel_nodes(
+        G_int,
+        {n: f"{n}@"+re.findall(r'\d+', f"{labels_dict[n]}")[0]
+         for n in G_int.nodes()}
+    )
+
+    start = [n for n, d in G_int.in_degree() if d == 0][0]
+    print(f"Repositioning ....")
+
+    pos = hierarchy_pos(G_int, root=start)
+
+    edge_labels = {
+        (n1, n2): d.get('transition', '')
+        for n1, n2, d in G_int.edges(data=True)
+    }
+
+    nx.draw(
+        G_int,
+        pos,
+        with_labels=with_labels or with_p_labels,
+        node_color=node_colors
+    )
+
+    if with_labels or with_t_labels:
+        nx.draw_networkx_edge_labels(
+            G_int,
+            pos,
+            edge_labels=edge_labels
+        )
+
+    dump(labels, open('statespacelabels.json', 'w'))
+    print("done")
+    if filename!="":
+        savefig(f"{filename}.png", format="PNG")
+    else:    
+        show()

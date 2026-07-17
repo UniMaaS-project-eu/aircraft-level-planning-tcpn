@@ -39,21 +39,47 @@ log =colorsets["log"]
 # Evaluation context with a user-defined function
 user_code = """
 import math
+import json
+grouping = json.load(open('curr_grouping.json','r'))
 
+
+def grouping2vec(a,s):
+    grouping = json.load(open('curr_grouping.json','r'))
+    th1_vec=TH1(a,s)
+    if any(TH1(a,s)):
+        dom = a[th1_vec.index(True)][0]
+    else:
+        dom = 2
+    res = []
+    for i in a:
+        if dom != 2 and i[0] in grouping[dom]: res.append(True)
+        else:res.append(False)
+    return res
 def th1(a,s):
-
-    return any(i>0.97*(j) for i,j in zip(a[1:],s[1:]))
+    return any(i>=0.9*(j) for i,j in zip(a[1:],s[1:]))
 def th2(a,s):
     return any(i>0.1*(j) for i,j in zip(a[1:],s[1:]))
 def th_error(a,s):
     return any([i>=j for i,j in zip(a[1:],s[1:])])
-
+def next_grouping(a,s,gr):
+    deadline = []
+    labels = []
+    for i,j in zip(a,s):
+        if i[0] in gr:
+            deadline.append(min([(y-x) for x,y in zip(i[1:],j[1:])]))
+            labels.append(i[0])
+    deadline_sorted, labels_sorted = zip(*sorted(zip(deadline, labels)))
+    return labels_sorted[0]
 def TH1(a,s):
-    return [th1(i,j) for i,j in zip(a,s)]
+    grouping = json.load(open('curr_grouping.json','r'))
+    next = next_grouping(a,s,grouping)
+    return [th1(i,j) if (i[0] == next) else False for i,j in zip(a,s) ]
 def TH2(a,s):
-    return [th2(i,j) for i,j in zip(a,s)]
+    return grouping2vec(a,s)
+
+    #return [th2(i,j) for i,j in zip(a,s)]
 def e(a,s):
-    return any(TH1(a,s))
+    return any(TH1(a,s[0]))
 
 def add(x,y):
     # normalize inputs as tuples
@@ -76,11 +102,11 @@ def reset(a,s,d):
 
 def expire(a,s):
     a = [tuple(i) for i in a]
-    s = [tuple(i) for i in s]
+    s = [tuple(i) for i in s[0]]
     return any([th_error(i,j) for i,j in zip(a,s)])
 
 def Duration(th,d):
-    return math.ceil(max([i*j for i,j in zip(th,d)]) / 24)
+    return math.ceil(max([i*j for i,j in zip(th,d)]) / 240)
 """
 context = EvaluationContext(user_code=user_code)
 
@@ -120,13 +146,13 @@ under_maintenance = Place("under_maintenance", airplane )
 cpn.add_place(under_maintenance)
 
 # TRANSITIONS
-fly = Transition("fly", variables= ["a","f","s","w"], guard="not e(a,s[0]) or (e(a,s[0]) and w[-1] <= 0 and not expire(a,s[0]))",transition_delay=0)
+fly = Transition("fly", variables= ["a","f","s","w"], guard="(not e(a,s) or (e(a,s) and w[-1] <= 0)) and not expire(a,s)",transition_delay=0)
 cpn.add_transition(fly)
 
-maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s[0]) and w[-1]>0",transition_delay=0)
+maintenance = Transition("maintenance", variables=["a","w","s"],guard="e(a,s) and w[-1]>0",transition_delay=0)
 cpn.add_transition(maintenance)
 
-expire = Transition("expire", variables=["a","s"],guard="expire(a,s[0]) ",transition_delay=0)
+expire = Transition("expire", variables=["a","s"],guard="expire(a,s) ",transition_delay=0)
 cpn.add_transition(expire)
 
 cleanup_wg = Transition("cleanup_wg", variables=["w","w0"],guard="w0[-1] <= w[-1]")
@@ -299,8 +325,11 @@ parser.add_argument('-i', '--no_img', action='store_true')
 parser.add_argument('-x', '--no_nx', action='store_true')
 parser.add_argument('--interactive_viewer', action='store_true')
 parser.add_argument('--nx_draw', action='store_true')
+parser.add_argument('--nx_draw_pruned', action='store_true')
 parser.add_argument('--fullmarking', action='store_true')
 parser.add_argument('-q', '--quiet', action='store_true')
+parser.add_argument('-g', '--grouping')
+# parser.add_argument('-f', '--filename')
 
 args = parser.parse_args()
 
@@ -313,9 +342,14 @@ mj = load(open(file,"r"))
 mj = json2marking(mj)
 for place in mj:
     marking.set_tokens(place,mj[place]["tokens"],timestamps=mj[place]["timestamps"])
+    
 marking.set_tokens("svc_delay",[0])
 # schedule =[(f"#{i}",1,2) for i in range(365)]
 # marking.set_tokens("flights", schedule,timestamps=(range(len(schedule))))  
+gfile = args.grouping if args.grouping is not None else "curr_grouping.json"
+import os
+os.system(f"cp {gfile} curr_grouping.json")
+
 if not args.no_json:
     from cpnpy.cpn.exporter import export_cpn_to_json
     exported_json = export_cpn_to_json(cpn, marking, context, "vp1.json", "usercode_vp1.py")
@@ -328,9 +362,9 @@ if not args.no_img:
     path = viz.save("vp1")
     if not args.quiet:print("Saved vizualisation to:", path)
 
-if not args.quiet:
-    print("Initial marking:")
-    print(prettymarking(marking))  
+# if not args.quiet:
+#     print("Initial marking:")
+#     print(prettymarking(marking))  
 
 if args.mode == "manual":
     def sequeun(cpn,marking,context):
@@ -418,6 +452,7 @@ if args.mode == "statespace":
         IV(RG)
     if (args.nx_draw):
         from util import nx_draw as draw
+        # from util import nx_draw as draw
         draw(RG,with_t_labels=True)
     terminals = [node for node in RG.nodes if RG.out_degree(node) == 0]
     for terminal in terminals:
@@ -460,7 +495,12 @@ if args.mode == "res":
         IV(RG)
     if (args.nx_draw):
         from util import nx_draw as draw
-        draw(RG,with_labels=True)
+        if args.verbose:print("visualising....")
+        draw(RG,with_t_labels=True,filename=f"RG/{file.split('/')[-1].replace('.json','')}")
+    if (args.nx_draw_pruned):
+        from util import nx_draw_pruned as draw
+        if args.verbose:print("visualising....")
+        draw(RG,with_t_labels=True,filename=f"RG/{file.split('/')[-1].replace('.json','')}")
     terminals = [node for node in RG.nodes if RG.out_degree(node) == 0]
     print("[")
     for terminal in terminals:
